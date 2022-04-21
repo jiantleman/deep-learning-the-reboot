@@ -47,7 +47,7 @@ def train(model, inputs, eng_padding_index):
 		gradients = tape.gradient(loss, model.trainable_variables)
 		model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
-def test(model, test_french, test_english, eng_padding_index):
+def test(model, inputs, eng_padding_index):
 	"""
 	Runs through one epoch - all testing examples.
 
@@ -61,18 +61,17 @@ def test(model, test_french, test_english, eng_padding_index):
 
 	# Note: Follow the same procedure as in train() to construct batches of data!
 	print("Testing model...")
-	num_batches = len(test_french)//model.batch_size
+	num_batches = len(inputs)//model.batch_size
 	print("Total number of batches: ", num_batches)
 	losses, accuracies, num_words = [], [], []
 	for i in range(num_batches):
 		if(i%100 == 0):
 			print("Batch: ", i)
-		encoder_input = test_french [i*model.batch_size:(i+1)*model.batch_size]
-		decoder_input = test_english[i*model.batch_size:(i+1)*model.batch_size][:,:-1]
-		decoder_label = test_english[i*model.batch_size:(i+1)*model.batch_size][:,1:]
+		decoder_input = inputs[i*model.batch_size:(i+1)*model.batch_size][:,:-1]
+		decoder_label = inputs[i*model.batch_size:(i+1)*model.batch_size][:,1:]
 		mask = np.where(decoder_label != eng_padding_index, 1, 0)
 
-		probs = model.call(encoder_input, decoder_input)
+		probs = model.call(decoder_input)
 		losses.append(model.loss_function(probs, decoder_label, mask))
 		accuracies.append(model.accuracy_function(probs, decoder_label, mask).numpy())
 		num_words.append(np.sum(mask))
@@ -95,9 +94,9 @@ def main():
 	# TODO:
 	# Train and Test Model for 1 epoch.
 	train(model, train_eng, eng_padding_index)
-	# perplexity, accuracy = test(model, test_frn, test_eng, eng_padding_index)
-	# print("Perplexity: ", perplexity)
-	# print("Accuracy: ", accuracy)
+	perplexity, accuracy = test(model, test_eng, eng_padding_index)
+	print("Perplexity: ", perplexity)
+	print("Accuracy: ", accuracy)
 
 	# Visualize a sample attention matrix from the test set
 	# Only takes effect if you enabled visualizations above
