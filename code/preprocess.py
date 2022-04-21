@@ -31,7 +31,7 @@ def pad_corpus(french, english):
 	ENGLISH_padded_sentences = []
 	for line in english:
 		padded_ENGLISH = line[:ENGLISH_WINDOW_SIZE]
-		padded_ENGLISH = [START_TOKEN] + padded_ENGLISH + [STOP_TOKEN] + [PAD_TOKEN] * (ENGLISH_WINDOW_SIZE - len(padded_ENGLISH)-1)
+		padded_ENGLISH = padded_ENGLISH + [STOP_TOKEN] + [PAD_TOKEN] * (ENGLISH_WINDOW_SIZE - len(padded_ENGLISH))
 		ENGLISH_padded_sentences.append(padded_ENGLISH)
 
 	return FRENCH_padded_sentences, ENGLISH_padded_sentences

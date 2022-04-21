@@ -1,6 +1,7 @@
 import math
 from tracemalloc import start
 import numpy as np
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 import tensorflow as tf
 import numpy as np
 from preprocess import *
@@ -34,8 +35,6 @@ def train(model, inputs, eng_padding_index):
 	num_batches = len(inputs)//model.batch_size
 	print("Total number of batches: ", num_batches)
 	for i in range(num_batches):
-		if(i%100 == 0):
-			print("Batch: ", i)
 		decoder_input = inputs[i*model.batch_size:(i+1)*model.batch_size][:,:-1]
 		decoder_label = inputs[i*model.batch_size:(i+1)*model.batch_size][:,1:]
 		mask = np.where(decoder_label != eng_padding_index, 1, 0)
@@ -43,6 +42,9 @@ def train(model, inputs, eng_padding_index):
 		with tf.GradientTape() as tape:
 			probs = model.call(decoder_input)
 			loss = model.loss_function(probs, decoder_label, mask)
+
+		if(i%100 == 0):
+			print("Batch: {}, loss: {}", i, loss)
 
 		gradients = tape.gradient(loss, model.trainable_variables)
 		model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
@@ -120,7 +122,8 @@ def main():
 	print("Preprocessing complete.")
 
 	model = Transformer_Decoder(ENGLISH_WINDOW_SIZE, len(vocab_eng))
-	# model.summary()
+	model.build((model.batch_size, model.window_size, model.vocab_size))
+	model.summary()
 	if len(sys.argv) == 2:
 		model.load_weights(sys.argv[1]).expect_partial()
 	else:

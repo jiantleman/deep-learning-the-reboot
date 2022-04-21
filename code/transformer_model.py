@@ -11,8 +11,8 @@ class Transformer_Decoder(tf.keras.Model):
 		self.vocab_size = vocab_size
 		self.window_size = window_size
 		self.batch_size = 64
-		self.embedding_size = 768
-		self.num_blocks = 4
+		self.embedding_size = 128
+		self.num_blocks = 2
 
 		# Define layers
 		self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
