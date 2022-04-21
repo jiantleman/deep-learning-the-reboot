@@ -1,12 +1,14 @@
 import math
 from tracemalloc import start
 import numpy as np
+import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 import tensorflow as tf
 import numpy as np
 from preprocess import *
 from transformer_model import Transformer_Decoder
 import sys
+
 
 def train(model, inputs, eng_padding_index):
 	"""
@@ -44,7 +46,7 @@ def train(model, inputs, eng_padding_index):
 			loss = model.loss_function(probs, decoder_label, mask)
 
 		if(i%100 == 0):
-			print("Batch: {}, loss: {}", i, loss)
+			print("Batch: {}, loss: {}".format(i, loss))
 
 		gradients = tape.gradient(loss, model.trainable_variables)
 		model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
@@ -122,7 +124,7 @@ def main():
 	print("Preprocessing complete.")
 
 	model = Transformer_Decoder(ENGLISH_WINDOW_SIZE, len(vocab_eng))
-	model.build((model.batch_size, model.window_size, model.vocab_size))
+	model.build((None, model.window_size))
 	model.summary()
 	if len(sys.argv) == 2:
 		model.load_weights(sys.argv[1]).expect_partial()

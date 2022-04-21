@@ -109,9 +109,10 @@ class Multi_Headed(tf.keras.layers.Layer):
 		:param inputs_for_queries: tensor of [batch_size x [ENG/FRN]_WINDOW_SIZE x input_size ]
 		:return: tensor of [BATCH_SIZE x (ENG/FRN)_WINDOW_SIZE x output_size ]
 		"""
-		batch_size = inputs.shape[0]
 		window_size = inputs.shape[1]
-		inputs = tf.reshape(inputs, [self.num_heads, batch_size, window_size, -1])
+		embed_size = inputs.shape[2]
+		# inputs = tf.reshape(inputs, [self.num_heads, -1, window_size, int(embed_size/self.num_heads)])
+		inputs = tf.split(inputs, self.num_heads, 2)
 		output = None
 		for i in range(self.num_heads):
 			head_output = self.heads[i](inputs[i])
