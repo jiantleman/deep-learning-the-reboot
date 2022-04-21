@@ -93,18 +93,19 @@ def generate_sentence(word1, length, vocab, model, sample_n=10):
 	reverse_vocab = {idx: word for word, idx in vocab.items()}
 
 	first_word_index = vocab[word1]
-	input = np.zeros(model.window_size)
-	input[0] = first_word_index
+	input = np.zeros((1,model.window_size))
+	input[0,0] = first_word_index
 	text = [word1]
 
 	for i in range(1,length):
-		logits = model.call(input)[i]
+		logits = model.call(input)[0,i].numpy()
 		top_n = np.argsort(logits)[-sample_n:]
 		n_logits = np.exp(logits[top_n]) / np.exp(logits[top_n]).sum()
 		out_index = np.random.choice(top_n, p=n_logits)
 
 		text.append(reverse_vocab[out_index])
-		input[i+1] = out_index
+		if i+1 != length:
+			input[0,i+1] = out_index
 
 	print(" ".join(text))
 	
@@ -119,9 +120,9 @@ def main():
 	print("Preprocessing complete.")
 
 	model = Transformer_Decoder(ENGLISH_WINDOW_SIZE, len(vocab_eng))
-	model.summary()
+	# model.summary()
 	if len(sys.argv) == 2:
-		model.load_weights(sys.argv[1])
+		model.load_weights(sys.argv[1]).expect_partial()
 	else:
 		train(model, train_eng, eng_padding_index)
 		model.save_weights('./checkpoints/my_checkpoint')
@@ -129,11 +130,11 @@ def main():
 	# TODO:
 	# Train and Test Model for 1 epoch.
 	
-	perplexity, accuracy = test(model, test_eng, eng_padding_index)
-	print("Perplexity: ", perplexity)
-	print("Accuracy: ", accuracy)
+		perplexity, accuracy = test(model, test_eng, eng_padding_index)
+		print("Perplexity: ", perplexity)
+		print("Accuracy: ", accuracy)
 	
-	start_words = ["this", "is", "the", "test"]
+	start_words = ["this", "is", "a", "test", "of", "how", "good", "the", "model", "is"]
 	for word in start_words:
 		generate_sentence(word, ENGLISH_WINDOW_SIZE, vocab_eng, model)
 
