@@ -11,15 +11,15 @@ class Transformer_Decoder(tf.keras.Model):
 		self.vocab_size = vocab_size
 		self.window_size = window_size
 		self.batch_size = 64
-		self.embedding_size = 128
-		self.num_blocks = 1
+		self.embedding_size = 768
+		self.num_blocks = 4
 
 		# Define layers
 		self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 		self.embedding  = tf.keras.layers.Embedding(self.vocab_size,  self.embedding_size)
 		self.pos_encoder = transformer.Position_Encoding_Layer(self.window_size, self.embedding_size)
 		self.blocks = tf.keras.Sequential(
-			*[transformer.Transformer_Block(self.embedding_size) for _ in range(self.num_blocks)]
+			[transformer.Transformer_Block(self.embedding_size) for _ in range(self.num_blocks)]
 		)
 		self.dense = tf.keras.layers.Dense(self.vocab_size)
 

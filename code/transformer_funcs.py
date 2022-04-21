@@ -87,7 +87,7 @@ class Multi_Headed(tf.keras.layers.Layer):
 
 		# TODO:
 		# Initialize heads
-		self.num_heads = 2
+		self.num_heads = 12
 		single_head_size = int(emb_sz/self.num_heads)
 		self.heads = [Atten_Head(single_head_size, single_head_size, True) for _ in range(self.num_heads)]
 		self.dense = tf.keras.layers.Dense(emb_sz)
