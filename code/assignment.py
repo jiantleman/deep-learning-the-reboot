@@ -6,7 +6,6 @@ from preprocess import *
 from transformer_model import Transformer_Decoder
 import sys
 
-
 def train(model, inputs, eng_padding_index):
 	"""
 	Runs through one epoch - all training examples.
@@ -90,10 +89,16 @@ def main():
 	print("Preprocessing complete.")
 
 	model = Transformer_Decoder(ENGLISH_WINDOW_SIZE, len(vocab_eng))
+	model.summary()
+	if len(sys.argv) == 2:
+		model.load_weights(sys.argv[1])
+	else:
+		train(model, train_eng, eng_padding_index)
+		model.save_weights('./checkpoints/my_checkpoint')
 
 	# TODO:
 	# Train and Test Model for 1 epoch.
-	train(model, train_eng, eng_padding_index)
+	
 	perplexity, accuracy = test(model, test_eng, eng_padding_index)
 	print("Perplexity: ", perplexity)
 	print("Accuracy: ", accuracy)
