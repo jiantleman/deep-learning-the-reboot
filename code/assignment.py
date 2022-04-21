@@ -1,4 +1,5 @@
 import math
+from tracemalloc import start
 import numpy as np
 import tensorflow as tf
 import numpy as np
@@ -77,6 +78,35 @@ def test(model, inputs, eng_padding_index):
 	avg_loss = sum(losses)/sum(num_words)
 	avg_acc = np.sum(np.array(accuracies)*np.array(num_words))/sum(num_words)
 	return math.exp(avg_loss), avg_acc
+
+def generate_sentence(word1, length, vocab, model, sample_n=10):
+	"""
+	Takes a model, vocab, selects from the most likely next word from the model's distribution
+
+	:param model: trained RNN model
+	:param vocab: dictionary, word to id mapping
+	:return: None
+	"""
+
+	# NOTE: Feel free to play around with different sample_n values
+
+	reverse_vocab = {idx: word for word, idx in vocab.items()}
+
+	first_word_index = vocab[word1]
+	input = np.zeros(model.window_size)
+	input[0] = first_word_index
+	text = [word1]
+
+	for i in range(1,length):
+		logits = model.call(input)[i]
+		top_n = np.argsort(logits)[-sample_n:]
+		n_logits = np.exp(logits[top_n]) / np.exp(logits[top_n]).sum()
+		out_index = np.random.choice(top_n, p=n_logits)
+
+		text.append(reverse_vocab[out_index])
+		input[i+1] = out_index
+
+	print(" ".join(text))
 	
 
 def main():
@@ -102,9 +132,10 @@ def main():
 	perplexity, accuracy = test(model, test_eng, eng_padding_index)
 	print("Perplexity: ", perplexity)
 	print("Accuracy: ", accuracy)
-
-	# Visualize a sample attention matrix from the test set
-	# Only takes effect if you enabled visualizations above
+	
+	start_words = ["this", "is", "the", "test"]
+	for word in start_words:
+		generate_sentence(word, ENGLISH_WINDOW_SIZE, vocab_eng, model)
 
 
 if __name__ == '__main__':
