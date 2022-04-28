@@ -17,14 +17,6 @@ def Attention_Matrix(K, Q, use_mask=True):
 	mask = tf.convert_to_tensor(value=np.transpose(np.tril(np.ones((window_size_queries,window_size_keys))*np.NINF,-1),(1,0)),dtype=tf.float32)
 	atten_mask = tf.tile(tf.reshape(mask,[-1,window_size_queries,window_size_keys]),[tf.shape(input=K)[0],1,1])
 
-	# TODO:
-	# 1) compute attention weights using queries and key matrices (if use_mask==True, then make sure to add the attention mask before softmax)
-	# 2) return the attention matrix
-
-
-	# Check lecture slides for how to compute self-attention.
- 	# You can use tf.transpose or tf.tensordot to perform the matrix multiplication for 3D matrices
-	# Remember:
 	# - Q is [batch_size x window_size_queries x embedding_size]
 	# - K is [batch_size x window_size_keys x embedding_size]
 	# - Mask is [batch_size x window_size_queries x window_size_keys]
@@ -34,13 +26,14 @@ def Attention_Matrix(K, Q, use_mask=True):
 	# This can be thought of as: for every query word, how much should I pay attention to the other words in this window?
 	# Those weights are then used to create linear combinations of the corresponding values for each query.
 	# Those queries will become the new embeddings.
-	Kt = tf.transpose(K, perm=[0,2,1])
-	QK = tf.einsum('bij,bjk->bik', Q, Kt)
+
+	K_T = tf.transpose(K, perm=[0,2,1])
+	QK = tf.einsum('bij,bjk->bik', Q, K_T)
 	embedding_size = K.get_shape()[2]
 	QK = QK/math.sqrt(embedding_size)
 	if use_mask: 
-		QK = QK + atten_mask
-	return tf.nn.softmax(QK)
+		QK += atten_mask
+	return tf.nn.softmax(QK)		# attention matrix
 
 
 class Atten_Head(tf.keras.layers.Layer):
@@ -49,51 +42,39 @@ class Atten_Head(tf.keras.layers.Layer):
 
 		self.use_mask = use_mask
 
-		# TODO:
-		# Initialize the weight matrices for K, V, and Q.
-		# They should be able to multiply an input_size vector to produce an output_size vector
-		# Hint: use self.add_weight(...)
+		# init weight matrices for K, V, and Q
 		self.K = self.add_weight("key_matrix",   shape=[input_size, output_size])
 		self.Q = self.add_weight("query_matrix", shape=[input_size, output_size])
 		self.V = self.add_weight("value_matrix", shape=[input_size, output_size])
  
 	@tf.function
-	# def call(self, inputs_for_keys, inputs_for_values, inputs_for_queries):
 	def call(self, inputs):
 
 		"""
 		This functions runs a single attention head.
-		:param inputs_for_keys: tensor of [batch_size x [ENG/FRN]_WINDOW_SIZE x input_size ]
-		:param inputs_for_values: tensor of [batch_size x [ENG/FRN]_WINDOW_SIZE x input_size ]
-		:param inputs_for_queries: tensor of [batch_size x [ENG/FRN]_WINDOW_SIZE x input_size ]
+		:param inputs:
 		:return: tensor of [BATCH_SIZE x (ENG/FRN)_WINDOW_SIZE x output_size ]
 		"""
-
-		# TODO:
-		# - Apply 3 matrices to turn inputs into keys, values, and queries. You will need to use tf.tensordot for this.
-		# - Call Attention_Matrix with the keys and queries, and with self.use_mask.
-		# - Apply the attention matrix to the values
-
+		# mult weights and inputs to get keys, values, and queries
 		K = tf.tensordot(inputs, self.K, axes=[[2],[0]])
 		V = tf.tensordot(inputs, self.V, axes=[[2],[0]])
 		Q = tf.tensordot(inputs, self.Q, axes=[[2],[0]])
+		# call Attention_Matrix with keys, queries, and self.use_mask
 		att_mat = Attention_Matrix(K, Q, self.use_mask)
 
-		return tf.einsum('bij,bjk->bik',att_mat, V)
+		return tf.einsum('bij,bjk->bik', att_mat, V)		# apply attention matrix to values
 
 class Multi_Headed(tf.keras.layers.Layer):
 	def __init__(self, emb_sz):
 		super(Multi_Headed, self).__init__()
 
-		# TODO:
-		# Initialize heads
+		# initialize heads
 		self.num_heads = 2
 		single_head_size = int(emb_sz/self.num_heads)
 		self.heads = [Atten_Head(single_head_size, single_head_size, True) for _ in range(self.num_heads)]
 		self.dense = tf.keras.layers.Dense(emb_sz)
 
 	@tf.function
-	# def call(self, inputs_for_keys, inputs_for_values, inputs_for_queries):
 	def call(self, inputs):
 		"""
 		FOR CS2470 STUDENTS:

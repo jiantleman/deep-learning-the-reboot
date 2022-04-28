@@ -7,18 +7,18 @@ class Transformer_Decoder(tf.keras.Model):
 
 		super(Transformer_Decoder, self).__init__()
 
-		# Define hyperparameters
+		# hyperparameters
 		self.vocab_size = vocab_size
 		self.window_size = window_size
 		self.batch_size = 64
 		self.embedding_size = 128
 		self.num_blocks = 2
 
-		# Define layers
+		# layers
 		self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 		self.embedding  = tf.keras.layers.Embedding(self.vocab_size,  self.embedding_size)
 		self.pos_encoder = transformer.Position_Encoding_Layer(self.window_size, self.embedding_size)
-		self.blocks = tf.keras.Sequential(
+		self.decoder_blocks = tf.keras.Sequential(
 			[transformer.Transformer_Block(self.embedding_size) for _ in range(self.num_blocks)]
 		)
 		self.dense = tf.keras.layers.Dense(self.vocab_size)
@@ -26,30 +26,24 @@ class Transformer_Decoder(tf.keras.Model):
 	@tf.function
 	def call(self, inputs):
 		"""
-		:param encoder_input: batched ids corresponding to French sentences
-		:param decoder_input: batched ids corresponding to English sentences
-		:return prbs: The 3d probabilities as a tensor, [batch_size x window_size x english_vocab_size]
+		:param inputs: ???
+		:return prbs: The 3d probabilities as a tensor, [batch_size x window_size x vocab_size]
 		"""
 
-		# TODO:
-		#1) Add the positional embeddings to French sentence embeddings
-		#2) Pass the French sentence embeddings to the encoder
-		#3) Add positional embeddings to the English sentence embeddings
-		#4) Pass the English embeddings and output of your encoder, to the decoder
-		#5) Apply dense layer(s) to the decoder out to generate probabilities
-
+		# combine sentence & positional embeddings
 		tok_embedding = self.embedding(inputs)
 		blocks_input = self.pos_encoder(tok_embedding)
-		blocks_output = self.blocks(blocks_input)
-		output = self.dense(blocks_output)
-		return tf.nn.softmax(output)
+		# pass to decoder blocks & dense layer(s)
+		blocks_output = self.decoder_blocks(blocks_input)
+		logits = self.dense(blocks_output)
+		
+		return tf.nn.softmax(logits)
 
 	def accuracy_function(self, prbs, labels, mask):
 		"""
-		DO NOT CHANGE
 		Computes the batch accuracy
 
-		:param prbs:  float tensor, word prediction probabilities [batch_size x window_size x english_vocab_size]
+		:param prbs:  float tensor, word prediction probabilities [batch_size x window_size x vocab_size]
 		:param labels:  integer tensor, word prediction labels [batch_size x window_size]
 		:param mask:  tensor that acts as a padding mask [batch_size x window_size]
 		:return: scalar tensor of accuracy of the batch between 0 and 1
@@ -63,14 +57,11 @@ class Transformer_Decoder(tf.keras.Model):
 	def loss_function(self, prbs, labels, mask):
 		"""
 		Calculates the model cross-entropy loss after one forward pass
-		Please use reduce sum here instead of reduce mean to make things easier in calculating per symbol accuracy.
-		:param prbs:  float tensor, word prediction probabilities [batch_size x window_size x english_vocab_size]
+		:param prbs:  float tensor, word prediction probabilities [batch_size x window_size x vocab_size]
 		:param labels:  integer tensor, word prediction labels [batch_size x window_size]
 		:param mask:  tensor that acts as a padding mask [batch_size x window_size]
 		:return: the loss of the model as a tensor
 		"""
-
-		# Note: you can reuse this from rnn_model.
 		losses = tf.keras.metrics.sparse_categorical_crossentropy(labels, prbs)
 		total_loss = tf.math.reduce_sum(tf.boolean_mask(losses,mask))
 		return total_loss
