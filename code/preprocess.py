@@ -1,62 +1,9 @@
-from asyncore import read
-import numpy as np
-import tensorflow as tf
-import numpy as np
-from tensorflow_text.tools.wordpiece_vocab import bert_vocab_from_dataset as bert_vocab
+from tokenizers import Tokenizer
+from tokenizers.models import BPE
+from tokenizers.trainers import BpeTrainer
+from tokenizers.pre_tokenizers import Whitespace
+from tokenizers.processors import TemplateProcessing
 
-
-
-def tokenize(data):
-
-	bert_tokenizer_params=dict(lower_case=True)
-	reserved_tokens=["[PAD]", "[UNK]", "[START]", "[END]"]
-
-	bert_vocab_args = dict(
-		# The target vocabulary size
-		vocab_size = 8000,
-		# Reserved tokens that must be included in the vocabulary
-		reserved_tokens=reserved_tokens,
-		# Arguments for `text.BertTokenizer`
-		bert_tokenizer_params=bert_tokenizer_params,
-		# Arguments for `wordpiece_vocab.wordpiece_tokenizer_learner_lib.learn`
-		learn_params={},
-	)
-
-
-	pt_vocab = bert_vocab.bert_vocab_from_dataset(
-    data.batch(1000).prefetch(2),
-    **bert_vocab_args
-	)
-
-	print(pt_vocab)
-	
-	return pt_vocab
-	
-
-def build_vocab(sentences):
-	"""
-	DO NOT CHANGE
-  Builds vocab from list of sentences
-	:param sentences:  list of sentences, each a list of words
-	:return: tuple of (dictionary: word --> unique index, pad_token_idx)
-  """
-	tokens = []
-	for s in sentences: tokens.extend(s)
-	all_words = sorted(list(set([STOP_TOKEN,PAD_TOKEN,UNK_TOKEN] + tokens)))
-
-	vocab =  {word:i for i,word in enumerate(all_words)}
-
-	return vocab,vocab[PAD_TOKEN]
-
-def convert_to_id(vocab, sentences):
-	"""
-	DO NOT CHANGE
-  Convert sentences to indexed
-	:param vocab:  dictionary, word --> unique index
-	:param sentences:  list of lists of words, each representing padded sentence
-	:return: numpy array of integers, with each row representing the word indeces in the corresponding sentences
-  """
-	return np.stack([[vocab[word] if word in vocab else vocab[UNK_TOKEN] for word in sentence] for sentence in sentences])
 
 
 def read_data(file_name):
@@ -68,40 +15,51 @@ def read_data(file_name):
   """
 	text = []
 	with open(file_name, 'rt', encoding='latin') as data_file:
-		for line in data_file: text.append(line.split())
+		for line in data_file: text.append(line)
 	return text
 
-def get_data(training_file, testing_file):
+file_name = "../data/office_transcript.csv"
+data = read_data(file_name)
 
-	# MAKE SURE YOU RETURN SOMETHING IN THIS PARTICULAR ORDER: train_english, test_english, train_french, test_french, english_vocab, french_vocab, eng_padding_index
+tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
+tokenizer.enable_padding(direction="right", pad_id=0,
+                                 pad_type_id=0, pad_token='[PAD]',
+                                 length=128)
 
-	#TODO:
+trainer = BpeTrainer(special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"])
+tokenizer.pre_tokenizer = Whitespace()
+tokenizer.train([file_name], trainer)
+tokenizer.post_processor = TemplateProcessing(
+    single="[CLS] $A [SEP]",
+    pair="[CLS] $A [SEP] $B:1 [SEP]:1",
+    special_tokens=[
+        ("[CLS]", tokenizer.token_to_id("[CLS]")),
+        ("[SEP]", tokenizer.token_to_id("[SEP]")),
+    ],
+)
 
-	train = read_data(training_file)
-	tokenize(train)
+all_tokens = []
+all_ids = []
+token_ids = []
+for line in data: 
+    output = tokenizer.encode(line)
+    ids = output.ids
+    tokens = output.tokens
+    all_tokens.append(tokens)
+    all_ids.append(ids)
+    tokens.insert(0,tokens[1])
+    ids.insert(0, ids[1])
+    tokens[1:] = ids[1:]
+    token_id = tokens
+    token_ids.append(token_id)
 
-	'''
+print(all_tokiens)
+print(all_ids)
+print(token_ids)    
 
-	#1) Read English and French Data for training and testing (see read_data)
-	train_english = read_data(english_training_file)
-	train_french  = read_data(french_training_file)
-	test_english  = read_data(english_test_file)
-	test_french   = read_data(french_test_file)
-	#2) Pad training data (see pad_corpus)
-	train_french, train_english  = pad_corpus(train_french, train_english)
-	#3) Pad testing data (see pad_corpus)
-	test_french, test_english  = pad_corpus(test_french,  test_english)
-	#4) Build vocab for French (see build_vocab)
-	french_vocab, _ = build_vocab(train_french)
-	#5) Build vocab for English (see build_vocab)
-	english_vocab, eng_padding_index = build_vocab(train_english)
-	#6) Convert training and testing English sentences to list of IDS (see convert_to_id)
-	train_english = convert_to_id(english_vocab, train_english)
-	test_english  = convert_to_id(english_vocab, test_english)
-	#7) Convert training and testing French sentences to list of IDS (see convert_to_id)
-	train_french = convert_to_id(french_vocab, train_french)
-	test_french  = convert_to_id(french_vocab, test_french)
-	return train_english, test_english, train_french, test_french, english_vocab, french_vocab, eng_padding_index
-	'''
+    
+    
 
-data = get_data("../data/friends_transcript.txt", None)
+
+
+
