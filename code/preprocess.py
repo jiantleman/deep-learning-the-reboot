@@ -2,39 +2,36 @@ from asyncore import read
 import numpy as np
 import tensorflow as tf
 import numpy as np
+from tensorflow_text.tools.wordpiece_vocab import bert_vocab_from_dataset as bert_vocab
 
-##########DO NOT CHANGE#####################
-PAD_TOKEN = "*PAD*"
-STOP_TOKEN = "*STOP*"
-START_TOKEN = "*START*"
-UNK_TOKEN = "*UNK*"
-FRENCH_WINDOW_SIZE = 14
-ENGLISH_WINDOW_SIZE = 14
-##########DO NOT CHANGE#####################
 
-def pad_corpus(french, english):
-	"""
-	DO NOT CHANGE:
-	arguments are lists of FRENCH, ENGLISH sentences. Returns [FRENCH-sents, ENGLISH-sents]. The
-	text is given an initial "*STOP*". English is padded with "*START*" at the beginning for Teacher Forcing.
-	:param french: list of French sentences
-	:param french: list of French sentences
-	:param english: list of English sentences
-	:return: A tuple of: (list of padded sentences for French, list of padded sentences for English)
-	"""
-	FRENCH_padded_sentences = []
-	for line in french:
-		padded_FRENCH = line[:FRENCH_WINDOW_SIZE]
-		padded_FRENCH += [STOP_TOKEN] + [PAD_TOKEN] * (FRENCH_WINDOW_SIZE - len(padded_FRENCH)-1)
-		FRENCH_padded_sentences.append(padded_FRENCH)
 
-	ENGLISH_padded_sentences = []
-	for line in english:
-		padded_ENGLISH = line[:ENGLISH_WINDOW_SIZE]
-		padded_ENGLISH = padded_ENGLISH + [STOP_TOKEN] + [PAD_TOKEN] * (ENGLISH_WINDOW_SIZE - len(padded_ENGLISH))
-		ENGLISH_padded_sentences.append(padded_ENGLISH)
+def tokenize(data):
 
-	return FRENCH_padded_sentences, ENGLISH_padded_sentences
+	bert_tokenizer_params=dict(lower_case=True)
+	reserved_tokens=["[PAD]", "[UNK]", "[START]", "[END]"]
+
+	bert_vocab_args = dict(
+		# The target vocabulary size
+		vocab_size = 8000,
+		# Reserved tokens that must be included in the vocabulary
+		reserved_tokens=reserved_tokens,
+		# Arguments for `text.BertTokenizer`
+		bert_tokenizer_params=bert_tokenizer_params,
+		# Arguments for `wordpiece_vocab.wordpiece_tokenizer_learner_lib.learn`
+		learn_params={},
+	)
+
+
+	pt_vocab = bert_vocab.bert_vocab_from_dataset(
+    data.batch(1000).prefetch(2),
+    **bert_vocab_args
+	)
+
+	print(pt_vocab)
+	
+	return pt_vocab
+	
 
 def build_vocab(sentences):
 	"""
@@ -74,27 +71,16 @@ def read_data(file_name):
 		for line in data_file: text.append(line.split())
 	return text
 
-def get_data(french_training_file, english_training_file, french_test_file, english_test_file):
-	"""
-	Use the helper functions in this file to read and parse training and test data, then pad the corpus.
-	Then vectorize your train and test data based on your vocabulary dictionaries.
-	:param french_training_file: Path to the French training file.
-	:param english_training_file: Path to the English training file.
-	:param french_test_file: Path to the French test file.
-	:param english_test_file: Path to the English test file.
+def get_data(training_file, testing_file):
 
-	:return: Tuple of train containing:
-	(2-d list or array with English training sentences in vectorized/id form [num_sentences x 15] ),
-	(2-d list or array with English test sentences in vectorized/id form [num_sentences x 15]),
-	(2-d list or array with French training sentences in vectorized/id form [num_sentences x 14]),
-	(2-d list or array with French test sentences in vectorized/id form [num_sentences x 14]),
-	English vocab (Dict containg word->index mapping),
-	French vocab (Dict containg word->index mapping),
-	English padding ID (the ID used for *PAD* in the English vocab. This will be used for masking loss)
-	"""
 	# MAKE SURE YOU RETURN SOMETHING IN THIS PARTICULAR ORDER: train_english, test_english, train_french, test_french, english_vocab, french_vocab, eng_padding_index
 
 	#TODO:
+
+	train = read_data(training_file)
+	tokenize(train)
+
+	'''
 
 	#1) Read English and French Data for training and testing (see read_data)
 	train_english = read_data(english_training_file)
@@ -116,3 +102,6 @@ def get_data(french_training_file, english_training_file, french_test_file, engl
 	train_french = convert_to_id(french_vocab, train_french)
 	test_french  = convert_to_id(french_vocab, test_french)
 	return train_english, test_english, train_french, test_french, english_vocab, french_vocab, eng_padding_index
+	'''
+
+data = get_data("../data/friends_transcript.txt", None)
