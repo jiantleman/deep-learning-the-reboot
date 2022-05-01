@@ -6,6 +6,7 @@ from tokenizers.processors import TemplateProcessing
 
 WINDOW_SIZE = 64
 VOCAB_SIZE = 10000
+PADDING_INDEX = 4
 
 def read_data(file_name):
   """
@@ -51,9 +52,9 @@ def get_data(file_name):
   for i in range(len(lines)): 
     output = tokenizer.encode(chars[i], lines[i])
     # all_tokens.append(output.tokens)
-    all_ids.append(output.ids)
+    if len(output.ids) == WINDOW_SIZE+1:
+      all_ids.append(output.ids)
 
-  print(all_ids[0:5])
 
   return tokenizer, all_ids
 
