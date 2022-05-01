@@ -1,7 +1,8 @@
-from asyncore import read
-import numpy as np
-import tensorflow as tf
-import numpy as np
+from tokenizers import Tokenizer
+from tokenizers.models import BPE
+from tokenizers.trainers import BpeTrainer
+from tokenizers.pre_tokenizers import Whitespace
+from tokenizers.processors import TemplateProcessing
 
 WINDOW_SIZE = 64
 
@@ -29,7 +30,7 @@ def get_data(file_name):
   tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
   tokenizer.enable_padding(direction="right", pad_id=4,
                                   pad_token='[PAD]',
-                                  length=WINDOW_SIZE)
+                                  length=WINDOW_SIZE+1)
   trainer = BpeTrainer(special_tokens=["[UNK]", "[BOS]", "[EOS]", "[DELIM]", "[PAD]"])
   tokenizer.pre_tokenizer = Whitespace()
   tokenizer.train([file_name], trainer)
