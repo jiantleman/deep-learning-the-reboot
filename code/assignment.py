@@ -1,5 +1,4 @@
 import math
-from tracemalloc import start
 import numpy as np
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
@@ -120,28 +119,28 @@ def main():
 	data_dir   = '../data'
 	file_names = ('fls.txt', 'els.txt', 'flt.txt', 'elt.txt')
 	file_paths = [f'{data_dir}/{fname}' for fname in file_names]
-	train_eng, test_eng, _, _, vocab_eng, _ ,eng_padding_index = get_data(*file_paths)
+	train_data, test_data, _, _, vocab, _ , padding_index = get_data(*file_paths)
 	print("Preprocessing complete.")
 
-	model = Transformer_Decoder(ENGLISH_WINDOW_SIZE, len(vocab_eng))
+	model = Transformer_Decoder(ENGLISH_WINDOW_SIZE, len(vocab))
 	model.build((None, model.window_size))
 	model.summary()
 	if len(sys.argv) == 2:
 		model.load_weights(sys.argv[1]).expect_partial()
 	else:
-		train(model, train_eng, eng_padding_index)
+		train(model, train_data, padding_index)
 		model.save_weights('./checkpoints/my_checkpoint')
 
 	# TODO:
 	# Train and Test Model for 1 epoch.
 	
-		perplexity, accuracy = test(model, test_eng, eng_padding_index)
+		perplexity, accuracy = test(model, test_data, padding_index)
 		print("Perplexity: ", perplexity)
 		print("Accuracy: ", accuracy)
 	
 	start_words = ["this", "is", "a", "test", "of", "how", "good", "the", "model", "is"]
 	for word in start_words:
-		generate_sentence(word, ENGLISH_WINDOW_SIZE, vocab_eng, model)
+		generate_sentence(word, ENGLISH_WINDOW_SIZE, vocab, model)
 
 
 if __name__ == '__main__':
