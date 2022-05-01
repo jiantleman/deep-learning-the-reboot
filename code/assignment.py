@@ -84,7 +84,7 @@ def test(model, inputs, eng_padding_index):
 	avg_acc = np.sum(np.array(accuracies)*np.array(num_words))/sum(num_words)
 	return math.exp(avg_loss), avg_acc
 
-def generate_sentence(word1, length, tokenizer, model, sample_n=10):
+def generate_sentence(word1, length, tokenizer, model, sample_n=5):
 	"""
 	Takes a model, vocab, selects from the most likely next word from the model's distribution
 
@@ -98,15 +98,17 @@ def generate_sentence(word1, length, tokenizer, model, sample_n=10):
 	input[0,0] = first_word_index
 	
 	for i in range(1,length):
-		logits = model.call(input)[0,i].numpy()
+		logits = model.call(input[:,:-1])[0,i].numpy()
 		top_n = np.argsort(logits)[-sample_n:]
 		n_logits = np.exp(logits[top_n]) / np.exp(logits[top_n]).sum()
 		out_index = np.random.choice(top_n, p=n_logits)
 		input[0,i+1] = out_index
 		if out_index == tokenizer.token_to_id("[EOS]"):
 			break
-
-	print(tokenizer.encode(input[0:i+1]))
+	
+	input = input.astype(int)
+	# print(input[0,:i+1])
+	print(tokenizer.decode(input[0,:i+1]))
 	
 
 def main():
