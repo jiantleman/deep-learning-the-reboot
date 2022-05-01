@@ -1,9 +1,11 @@
-from asyncore import read
-import numpy as np
-import tensorflow as tf
-import numpy as np
+from tokenizers import Tokenizer
+from tokenizers.models import BPE
+from tokenizers.trainers import BpeTrainer
+from tokenizers.pre_tokenizers import Whitespace
+from tokenizers.processors import TemplateProcessing
 
 WINDOW_SIZE = 64
+VOCAB_SIZE = 10000
 
 def read_data(file_name):
   """
@@ -29,8 +31,8 @@ def get_data(file_name):
   tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
   tokenizer.enable_padding(direction="right", pad_id=4,
                                   pad_token='[PAD]',
-                                  length=WINDOW_SIZE)
-  trainer = BpeTrainer(special_tokens=["[UNK]", "[BOS]", "[EOS]", "[DELIM]", "[PAD]"])
+                                  length=WINDOW_SIZE+1)
+  trainer = BpeTrainer(special_tokens=["[UNK]", "[BOS]", "[EOS]", "[DELIM]", "[PAD]"], vocab_size=VOCAB_SIZE)
   tokenizer.pre_tokenizer = Whitespace()
   tokenizer.train([file_name], trainer)
   tokenizer.post_processor = TemplateProcessing(
@@ -43,13 +45,17 @@ def get_data(file_name):
       ],
   )
 
-  all_tokens = []
+  # all_tokens = []
   all_ids = []
   
   for i in range(len(lines)): 
     output = tokenizer.encode(chars[i], lines[i])
-    all_tokens.append(output.tokens)
+    # all_tokens.append(output.tokens)
     all_ids.append(output.ids)
+
+  print(all_ids[0:5])
+
+  return tokenizer, all_ids
 
   
 
