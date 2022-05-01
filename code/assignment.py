@@ -95,7 +95,9 @@ def generate_sentence(word1, length, tokenizer, model, sample_n=5):
 
 	first_word_index = tokenizer.token_to_id(word1)
 	input = np.zeros((1,model.window_size+1))
-	input[0,0] = first_word_index
+	input[0,0] = tokenizer.token_to_id("[BOS]")
+	input[0,1] = first_word_index
+	input[0,2] = tokenizer.token_to_id("[DELIM]")
 	
 	for i in range(1,length):
 		logits = model.call(input[:,:-1])[0,i].numpy()
