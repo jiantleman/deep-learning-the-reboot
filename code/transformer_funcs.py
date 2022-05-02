@@ -90,9 +90,7 @@ class Multi_Headed(tf.keras.layers.Layer):
 		:param inputs_for_queries: tensor of [batch_size x [ENG/FRN]_WINDOW_SIZE x input_size ]
 		:return: tensor of [BATCH_SIZE x (ENG/FRN)_WINDOW_SIZE x output_size ]
 		"""
-		window_size = inputs.shape[1]
-		embed_size = inputs.shape[2]
-		# inputs = tf.reshape(inputs, [self.num_heads, -1, window_size, int(embed_size/self.num_heads)])
+
 		inputs = tf.split(inputs, self.num_heads, 2)
 		output = None
 		for i in range(self.num_heads):
@@ -103,29 +101,6 @@ class Multi_Headed(tf.keras.layers.Layer):
 				output = tf.concat([output, head_output], -1)
 		return self.dense(output)
 		
-
-# class Multi_Headed(tf.keras.layers.Layer):
-# 	def __init__(self, emb_sz):
-# 		super(Multi_Headed, self).__init__()
-
-# 		# TODO:
-# 		# Initialize heads
-# 		self.num_heads = 2
-# 		self.key = self.Dense(emb_sz)
-# 		self.value = self.Dense(emb_sz)
-# 		self.query = self.Dense(emb_sz)
-
-# 	@tf.function
-# 	def call(self, inputs):
-# 		batch_size = inputs.shape[0]
-# 		window_size = inputs.shape[1]
-
-# 		k_t = tf.reshape(self.key(inputs), [batch_size, window_size, self.num_heads, -1])
-# 		k_t = tf.transpose(k_t, [0, 2, 3, 1]) # batch_size x self.num_heads x head_dim x seq_len
-# 		v = tf.transpose(self.value(inputs), [0, 2, 1, 3]) # batch_size x head_dim x self.num_heads x seq_len
-# 		q = tf.transpose(self.query(inputs), [0, 2, 1, 3]) # batch_size x head_dim x self.num_heads x seq_len
-		
-# 		attn = tf.linalg.matmul(q, k_t)
 
 class Feed_Forwards(tf.keras.layers.Layer):
 	def __init__(self, emb_sz):

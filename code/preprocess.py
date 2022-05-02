@@ -3,7 +3,6 @@ from tokenizers.models import BPE
 from tokenizers.trainers import BpeTrainer
 from tokenizers.pre_tokenizers import Whitespace
 from tokenizers.processors import TemplateProcessing
-from matplotlib import pyplot as plt
 
 WINDOW_SIZE = 64
 VOCAB_SIZE = 10000
