@@ -30,7 +30,7 @@ def read_friends_data(file_name):
 
 def read_pretrain_data(file_name):
   lines = []
-  with open(file_name, 'rt', encoding='utf8',newline="") as data_file:
+  with open(file_name, 'rt', encoding='latin',newline="") as data_file:
     for line in data_file:
       line = line.encode("ascii","ignore").decode()
       if line != " \n" and "= " not in line:
@@ -67,11 +67,10 @@ def get_data():
   for i in range(len(lines)): 
     output = tokenizer.encode(chars[i], lines[i])
     if len(output.ids) == WINDOW_SIZE+1:
-      friends_data.append(len(output.ids))
+      friends_data.append(output.ids)
 
   pretrain_data = tokenizer.encode_batch(pretrain_text)
-  pretrain_data = [x for x in pretrain_data if len(x)==WINDOW_SIZE+1]
-  lengths = [len(x) for x in pretrain_data]
+  pretrain_data = [x.ids for x in pretrain_data if len(x)==WINDOW_SIZE+1]
   
 
   return tokenizer, friends_data, pretrain_data

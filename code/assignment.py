@@ -109,7 +109,6 @@ def generate_sentence(word1, length, tokenizer, model, sample_n=5):
 			break
 	
 	input = input.astype(int)
-	# print(input[0,:i+1])
 	print(tokenizer.decode(input[0,:i+1]))
 	
 
@@ -133,7 +132,7 @@ def main():
 		train(model, pretrain_data, PADDING_INDEX)
 		print("Finetuning")
 		train(model, train_data, PADDING_INDEX)
-		model.save_weights('./checkpoints/my_checkpoint')
+		model.save_weights('./checkpoints/my_checkpoint_pretrained')
 	
 		perplexity, accuracy = test(model, test_data, PADDING_INDEX)
 		print("Perplexity: ", perplexity)
