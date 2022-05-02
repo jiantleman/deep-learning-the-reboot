@@ -1,5 +1,4 @@
 import math
-import random
 import numpy as np
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
@@ -8,6 +7,7 @@ import numpy as np
 from preprocess import *
 from transformer_model import Transformer_Decoder
 import sys
+import argparse
 
 TRAIN_RATIO = 0.8
 
@@ -29,7 +29,7 @@ def train(model, inputs, padding_index):
 	#pty
 	# - When computing loss, the decoder labels should have the first word removed:
 	#	 [STOP CS147 is the best class. STOP] --> [CS147 is the best class. STOP]
-	print("Training model...")
+	print("=====================Training model=====================")
 
 	num_examples = len(inputs)
 	indices = tf.random.shuffle(tf.range(num_examples))
@@ -51,6 +51,7 @@ def train(model, inputs, padding_index):
 
 		gradients = tape.gradient(loss, model.trainable_variables)
 		model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+	print("=====================Training complete=====================")
 
 def test(model, inputs, padding_index):
 	"""
@@ -65,10 +66,10 @@ def test(model, inputs, padding_index):
 	"""
 
 	# Note: Follow the same procedure as in train() to construct batches of data!
-	print("Testing model...")
+	print("=====================Testing model=====================")
 	num_batches = len(inputs)//model.batch_size
 	print("Total number of batches: ", num_batches)
-	losses, accuracies, num_words = [], [], []
+	losses, num_words = [], []
 	for i in range(num_batches):
 		if(i%100 == 0):
 			print("Batch: ", i)
@@ -78,11 +79,10 @@ def test(model, inputs, padding_index):
 
 		probs = model.call(decoder_input)
 		losses.append(model.loss_function(probs, decoder_label, mask))
-		accuracies.append(model.accuracy_function(probs, decoder_label, mask).numpy())
 		num_words.append(np.sum(mask))
 	avg_loss = sum(losses)/sum(num_words)
-	avg_acc = np.sum(np.array(accuracies)*np.array(num_words))/sum(num_words)
-	return math.exp(avg_loss), avg_acc
+	print("=====================Testing complete=====================")
+	return math.exp(avg_loss)
 
 def generate_sentence(word1, length, tokenizer, model, sample_n=5):
 	"""
@@ -113,32 +113,39 @@ def generate_sentence(word1, length, tokenizer, model, sample_n=5):
 	
 
 def main():
-	
-	print("Running preprocessing...")
+
+	parser = argparse.ArgumentParser()
+	parser.add_argument('--load_model', type=str, required=False, help="path to load model from")
+	parser.add_argument('--save_model', type=str, required=False, help="path to save model to")
+	args = parser.parse_args()
+
+	print("=====================Running preprocessing=====================")
 	tokenizer, data, pretrain_data = get_data()
 	data = np.array(data)
 	np.random.shuffle(data)
 	train_data = data[0:int(TRAIN_RATIO*len(data))]
 	test_data = data[int(TRAIN_RATIO*len(data)):]
-	print("Preprocessing complete.")
+	print("=====================Preprocessing complete=====================")
 
 	model = Transformer_Decoder(WINDOW_SIZE, VOCAB_SIZE)
 	model.build((None, model.window_size))
 	model.summary()
-	if len(sys.argv) == 2:
-		model.load_weights(sys.argv[1]).expect_partial()
+	if args.load_model:
+		model.load_weights(args.load_model).expect_partial()
 	else:
-		print("Pretraining")
+		print("=====================Pretraining=====================")
 		train(model, pretrain_data, PADDING_INDEX)
-		print("Finetuning")
+		print("=====================Finetuning=====================")
 		train(model, train_data, PADDING_INDEX)
-		model.save_weights('./checkpoints/my_checkpoint_pretrained')
-	
-		perplexity, accuracy = test(model, test_data, PADDING_INDEX)
+		
+		perplexity = test(model, test_data, PADDING_INDEX)
 		print("Perplexity: ", perplexity)
-		print("Accuracy: ", accuracy)
+	
+	if args.save_model:
+		model.save_weights(args.save_model)
 	
 	start_words = ["Monica", "Rachel", "Phoebe", "Joey", "Chandler", "Ross"]
+	print("=====================Generating words=====================")
 	for word in start_words:
 		generate_sentence(word, WINDOW_SIZE, tokenizer, model)
 
