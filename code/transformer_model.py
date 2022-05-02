@@ -19,7 +19,8 @@ class Transformer_Decoder(tf.keras.Model):
 		self.embedding  = tf.keras.layers.Embedding(self.vocab_size,  self.embedding_size)
 		self.pos_encoder = transformer.Position_Encoding_Layer(self.window_size, self.embedding_size)
 		self.decoder_blocks = tf.keras.Sequential(
-			[transformer.Transformer_Block(self.embedding_size) for _ in range(self.num_blocks)]
+			[transformer.Transformer_Block(self.embedding_size) for _ in range(self.num_blocks)],
+                        name = "Transformer_Blocks"
 		)
 		self.dense = tf.keras.layers.Dense(self.vocab_size)
 

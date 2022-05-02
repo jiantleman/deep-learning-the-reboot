@@ -138,8 +138,8 @@ def main():
 		print("=====================Finetuning=====================")
 		train(model, train_data, PADDING_INDEX)
 		
-		perplexity = test(model, test_data, PADDING_INDEX)
-		print("Perplexity: ", perplexity)
+	perplexity = test(model, test_data, PADDING_INDEX)
+	print("Perplexity: ", perplexity)
 	
 	if args.save_model:
 		model.save_weights(args.save_model)
