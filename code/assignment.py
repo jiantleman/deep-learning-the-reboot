@@ -11,7 +11,7 @@ import sys
 
 TRAIN_RATIO = 0.8
 
-def train(model, inputs, eng_padding_index):
+def train(model, inputs, padding_index):
 	"""
 	Runs through one epoch - all training examples.
 
@@ -40,7 +40,7 @@ def train(model, inputs, eng_padding_index):
 	for i in range(num_batches):
 		decoder_input = inputs[i*model.batch_size:(i+1)*model.batch_size][:,:-1]
 		decoder_label = inputs[i*model.batch_size:(i+1)*model.batch_size][:,1:]
-		mask = np.where(decoder_label != eng_padding_index, 1, 0)
+		mask = np.where(decoder_label != padding_index, 1, 0)
 
 		with tf.GradientTape() as tape:
 			probs = model.call(decoder_input)
@@ -52,7 +52,7 @@ def train(model, inputs, eng_padding_index):
 		gradients = tape.gradient(loss, model.trainable_variables)
 		model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
-def test(model, inputs, eng_padding_index):
+def test(model, inputs, padding_index):
 	"""
 	Runs through one epoch - all testing examples.
 
@@ -74,7 +74,7 @@ def test(model, inputs, eng_padding_index):
 			print("Batch: ", i)
 		decoder_input = inputs[i*model.batch_size:(i+1)*model.batch_size][:,:-1]
 		decoder_label = inputs[i*model.batch_size:(i+1)*model.batch_size][:,1:]
-		mask = np.where(decoder_label != eng_padding_index, 1, 0)
+		mask = np.where(decoder_label != padding_index, 1, 0)
 
 		probs = model.call(decoder_input)
 		losses.append(model.loss_function(probs, decoder_label, mask))
@@ -116,7 +116,7 @@ def generate_sentence(word1, length, tokenizer, model, sample_n=5):
 def main():
 	
 	print("Running preprocessing...")
-	tokenizer, data = get_data("../data/friends_transcript.txt")
+	tokenizer, data, pretrain_data = get_data()
 	data = np.array(data)
 	np.random.shuffle(data)
 	train_data = data[0:int(TRAIN_RATIO*len(data))]
@@ -129,6 +129,9 @@ def main():
 	if len(sys.argv) == 2:
 		model.load_weights(sys.argv[1]).expect_partial()
 	else:
+		print("Pretraining")
+		train(model, pretrain_data, PADDING_INDEX)
+		print("Finetuning")
 		train(model, train_data, PADDING_INDEX)
 		model.save_weights('./checkpoints/my_checkpoint')
 	

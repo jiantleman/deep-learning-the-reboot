@@ -3,12 +3,14 @@ from tokenizers.models import BPE
 from tokenizers.trainers import BpeTrainer
 from tokenizers.pre_tokenizers import Whitespace
 from tokenizers.processors import TemplateProcessing
+from matplotlib import pyplot as plt
 
 WINDOW_SIZE = 64
 VOCAB_SIZE = 10000
 PADDING_INDEX = 4
+MIN_FREQUENCY = 2
 
-def read_data(file_name):
+def read_friends_data(file_name):
   """
   DO NOT CHANGE
   Load text data from file
@@ -26,16 +28,31 @@ def read_data(file_name):
           lines.append(line_text[1])
   return char, lines
 
-def get_data(file_name):
-  chars, lines = read_data(file_name)
+def read_pretrain_data(file_name):
+  lines = []
+  with open(file_name, 'rt', encoding='utf8',newline="") as data_file:
+    for line in data_file:
+      line = line.encode("ascii","ignore").decode()
+      if line != " \n" and "= " not in line:
+        for sentence in line.rstrip(' \n').split("."):
+          lines.append(sentence + ".")
+  print(len(lines))
+  return lines
+
+
+def get_data():
+  file_name = ["../data/friends_transcript.txt", "../data/wikitext-2-raw/wiki.train.raw"]
+  pretrain_text = read_pretrain_data(file_name[1])
+  chars, lines = read_friends_data(file_name[0])
 
   tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
   tokenizer.enable_padding(direction="right", pad_id=4,
                                   pad_token='[PAD]',
                                   length=WINDOW_SIZE+1)
-  trainer = BpeTrainer(special_tokens=["[UNK]", "[BOS]", "[EOS]", "[DELIM]", "[PAD]"], vocab_size=VOCAB_SIZE)
+  trainer = BpeTrainer(special_tokens=["[UNK]", "[BOS]", "[EOS]", "[DELIM]", "[PAD]"], 
+    vocab_size=VOCAB_SIZE, min_frequency = 5)
   tokenizer.pre_tokenizer = Whitespace()
-  tokenizer.train([file_name], trainer)
+  tokenizer.train(file_name, trainer)
   tokenizer.post_processor = TemplateProcessing(
       single="[BOS] $A [EOS]",
       pair="[BOS] $A [DELIM] $B:1 [EOS]:1",
@@ -46,22 +63,18 @@ def get_data(file_name):
       ],
   )
 
-  # all_tokens = []
-  all_ids = []
-  
+  friends_data = []
   for i in range(len(lines)): 
     output = tokenizer.encode(chars[i], lines[i])
-    # all_tokens.append(output.tokens)
     if len(output.ids) == WINDOW_SIZE+1:
-      all_ids.append(output.ids)
+      friends_data.append(len(output.ids))
 
-
-  return tokenizer, all_ids
-
+  pretrain_data = tokenizer.encode_batch(pretrain_text)
+  pretrain_data = [x for x in pretrain_data if len(x)==WINDOW_SIZE+1]
+  lengths = [len(x) for x in pretrain_data]
   
 
-get_data("../data/friends_transcript.txt")
-    
+  return tokenizer, friends_data, pretrain_data
     
 
 
