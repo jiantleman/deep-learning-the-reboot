@@ -109,7 +109,7 @@ def generate_sentence(word1, length, tokenizer, model, sample_n=5):
 			break
 	
 	input = input.astype(int)
-	print(tokenizer.decode(input[0,:i+1]))
+	return tokenizer.decode(input[0,:i+1])
 	
 
 def main():
@@ -117,6 +117,7 @@ def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--load_model', type=str, required=False, help="path to load model from")
 	parser.add_argument('--save_model', type=str, required=False, help="path to save model to")
+	parser.add_argument('--save_output', type=str, required=True, help="path to output to")
 	args = parser.parse_args()
 
 	print("=====================Running preprocessing=====================")
@@ -146,8 +147,12 @@ def main():
 	
 	start_words = ["Monica", "Rachel", "Phoebe", "Joey", "Chandler", "Ross"]
 	print("=====================Generating words=====================")
+	f = open(args.save_output, 'w')
 	for word in start_words:
-		generate_sentence(word, WINDOW_SIZE, tokenizer, model)
+		for _ in range(15):
+			sentence = generate_sentence(word, WINDOW_SIZE, tokenizer, model)
+			f.write(sentence+"\n")
+	f.close()
 
 
 if __name__ == '__main__':
