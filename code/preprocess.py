@@ -93,7 +93,6 @@ def read_pretrain_data(file_name):
       if line != " \n" and "= " not in line:
         for sentence in line.rstrip(' \n').split("."):
           lines.append(sentence + ".")
-  print(len(lines))
   return lines
 
 
