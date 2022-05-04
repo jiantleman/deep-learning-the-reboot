@@ -10,8 +10,6 @@ import sys
 import argparse
 
 TRAIN_RATIO = 0.8
-PRETRAIN_EPOCH = 10
-FINETUNE_EPOCH = 1
 
 def train(model, inputs, padding_index):
 	"""
@@ -31,6 +29,8 @@ def train(model, inputs, padding_index):
 	#pty
 	# - When computing loss, the decoder labels should have the first word removed:
 	#	 [STOP CS147 is the best class. STOP] --> [CS147 is the best class. STOP]
+	print("=====================Training model=====================")
+
 	num_examples = len(inputs)
 	indices = tf.random.shuffle(tf.range(num_examples))
 	inputs = tf.gather(inputs, indices)
@@ -51,6 +51,7 @@ def train(model, inputs, padding_index):
 
 		gradients = tape.gradient(loss, model.trainable_variables)
 		model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+	print("=====================Training complete=====================")
 
 def test(model, inputs, padding_index):
 	"""
@@ -65,7 +66,7 @@ def test(model, inputs, padding_index):
 	"""
 
 	# Note: Follow the same procedure as in train() to construct batches of data!
-	print("=========================Testing model==========================")
+	print("=====================Testing model=====================")
 	num_batches = len(inputs)//model.batch_size
 	print("Total number of batches: ", num_batches)
 	losses, num_words = [], []
@@ -80,7 +81,7 @@ def test(model, inputs, padding_index):
 		losses.append(model.loss_function(probs, decoder_label, mask))
 		num_words.append(np.sum(mask))
 	avg_loss = sum(losses)/sum(num_words)
-	print("========================Testing complete========================")
+	print("=====================Testing complete=====================")
 	return math.exp(avg_loss)
 
 def generate_sentence(word1, length, tokenizer, model, sample_n=5):
@@ -119,13 +120,13 @@ def main():
 	parser.add_argument('--save_output', type=str, required=True, help="path to output to")
 	args = parser.parse_args()
 
-	print("=====================Running preprocessing======================")
+	print("=====================Running preprocessing=====================")
 	tokenizer, data, pretrain_data = get_data()
 	data = np.array(data)
 	np.random.shuffle(data)
 	train_data = data[0:int(TRAIN_RATIO*len(data))]
 	test_data = data[int(TRAIN_RATIO*len(data)):]
-	print("=====================Preprocessing complete======================")
+	print("=====================Preprocessing complete=====================")
 
 	model = Transformer_Decoder(WINDOW_SIZE, VOCAB_SIZE)
 	model.build((None, model.window_size))
@@ -133,16 +134,10 @@ def main():
 	if args.load_model:
 		model.load_weights(args.load_model).expect_partial()
 	else:
-		print("==========================Pretraining===========================")
-		for i in range(PRETRAIN_EPOCH):
-			print("Epoch:",i)
-			train(model, pretrain_data, PADDING_INDEX)
-		print("======================Pretraining complete======================")
-		print("===========================Finetuning===========================")
-		for i in range(FINETUNE_EPOCH):
-			print("Epoch:",i)
-			train(model, train_data, PADDING_INDEX)
-		print("======================Finetuning Complete=======================")
+		print("=====================Pretraining=====================")
+		train(model, pretrain_data, PADDING_INDEX)
+		print("=====================Finetuning=====================")
+		train(model, train_data, PADDING_INDEX)
 		
 	perplexity = test(model, test_data, PADDING_INDEX)
 	print("Perplexity: ", perplexity)
@@ -151,7 +146,7 @@ def main():
 		model.save_weights(args.save_model)
 	
 	start_words = ["Monica", "Rachel", "Phoebe", "Joey", "Chandler", "Ross"]
-	print("========================Generating words========================")
+	print("=====================Generating words=====================")
 	f = open(args.save_output, 'w')
 	for word in start_words:
 		for _ in range(15):

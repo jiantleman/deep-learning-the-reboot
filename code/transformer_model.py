@@ -10,21 +10,18 @@ class Transformer_Decoder(tf.keras.Model):
 		# hyperparameters
 		self.vocab_size = vocab_size
 		self.window_size = window_size
-		self.batch_size = 32
-		self.embedding_size = 384
-		self.num_blocks = 6
-		self.dropout_rate = 0.1
+		self.batch_size = 64
+		self.embedding_size = 128
+		self.num_blocks = 2
 
 		# layers
-		self.optimizer = tf.keras.optimizers.Adam(learning_rate=2.5**(-4))
+		self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 		self.embedding  = tf.keras.layers.Embedding(self.vocab_size,  self.embedding_size)
-		self.dropout = tf.keras.layers.Dropout(self.dropout_rate)
 		self.pos_encoder = transformer.Position_Encoding_Layer(self.window_size, self.embedding_size)
 		self.decoder_blocks = tf.keras.Sequential(
 			[transformer.Transformer_Block(self.embedding_size) for _ in range(self.num_blocks)],
                         name = "Transformer_Blocks"
 		)
-		self.layer_norm = tf.keras.layers.LayerNormalization(axis=-1)
 		self.dense = tf.keras.layers.Dense(self.vocab_size)
 
 	@tf.function
@@ -35,10 +32,10 @@ class Transformer_Decoder(tf.keras.Model):
 		"""
 
 		# combine sentence & positional embeddings
-		tok_embedding = self.dropout(self.embedding(inputs))
+		tok_embedding = self.embedding(inputs)
 		blocks_input = self.pos_encoder(tok_embedding)
 		# pass to decoder blocks & dense layer(s)
-		blocks_output = self.layer_norm(self.decoder_blocks(blocks_input))
+		blocks_output = self.decoder_blocks(blocks_input)
 		logits = self.dense(blocks_output)
 		
 		return tf.nn.softmax(logits)
