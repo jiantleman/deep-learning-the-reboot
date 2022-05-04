@@ -65,7 +65,7 @@ class Atten_Head(tf.keras.layers.Layer):
 		return tf.einsum('bij,bjk->bik', att_mat, V)		# apply attention matrix to values
 
 class Multi_Headed(tf.keras.layers.Layer):
-	def __init__(self, emb_sz):
+	def __init__(self, emb_sz, dropout_rate):
 		super(Multi_Headed, self).__init__()
 
 		# initialize heads
@@ -73,6 +73,7 @@ class Multi_Headed(tf.keras.layers.Layer):
 		single_head_size = int(emb_sz/self.num_heads)
 		self.heads = [Atten_Head(single_head_size, single_head_size, True) for _ in range(self.num_heads)]
 		self.dense = tf.keras.layers.Dense(emb_sz)
+		self.dropout = tf.keras.layers.Dropout(dropout_rate)
 
 	@tf.function
 	def call(self, inputs):
@@ -99,15 +100,16 @@ class Multi_Headed(tf.keras.layers.Layer):
 				output = head_output
 			else:			
 				output = tf.concat([output, head_output], -1)
-		return self.dense(output)
+		return self.dropout(self.dense(output))
 		
 
 class Feed_Forwards(tf.keras.layers.Layer):
-	def __init__(self, emb_sz):
+	def __init__(self, emb_sz, ff_emb_sz, dropout_rate):
 		super(Feed_Forwards, self).__init__()
 
-		self.layer_1 = tf.keras.layers.Dense(emb_sz,activation='relu')
+		self.layer_1 = tf.keras.layers.Dense(ff_emb_sz,activation='relu')
 		self.layer_2 = tf.keras.layers.Dense(emb_sz)
+		self.dropout = tf.keras.layers.Dropout(dropout_rate)
 
 	@tf.function
 	def call(self, inputs):
@@ -121,15 +123,19 @@ class Feed_Forwards(tf.keras.layers.Layer):
 		"""
 		layer_1_out = self.layer_1(inputs)
 		layer_2_out = self.layer_2(layer_1_out)
-		return layer_2_out
+		return self.dropout(layer_2_out)
 
 class Transformer_Block(tf.keras.layers.Layer):
 	def __init__(self, emb_sz):
 		super(Transformer_Block, self).__init__()
 
+		self.dropout_rate = 0.1
+		self.ff_embed_size = 1536
+
+
 		self.layer_norm = tf.keras.layers.LayerNormalization(axis=-1)
-		self.self_atten = Multi_Headed(emb_sz)
-		self.ff_layer = Feed_Forwards(emb_sz)
+		self.self_atten = Multi_Headed(emb_sz, self.dropout_rate)
+		self.ff_layer = Feed_Forwards(emb_sz, self.ff_embed_size, self.dropout_rate)
 
 	@tf.function
 	def call(self, inputs):
