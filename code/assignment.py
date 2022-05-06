@@ -8,6 +8,8 @@ from preprocess import *
 from transformer_model import Transformer_Decoder
 import sys
 import argparse
+from matplotlib import pyplot as plt
+from datetime import datetime
 
 TRAIN_RATIO = 0.8
 
@@ -34,6 +36,7 @@ def train(model, inputs, padding_index):
 	num_examples = len(inputs)
 	indices = tf.random.shuffle(tf.range(num_examples))
 	inputs = tf.gather(inputs, indices)
+	train_loss = []
 
 	num_batches = len(inputs)//model.batch_size
 	print("Total number of batches: ", num_batches)
@@ -45,6 +48,7 @@ def train(model, inputs, padding_index):
 		with tf.GradientTape() as tape:
 			probs = model.call(decoder_input)
 			loss = model.loss_function(probs, decoder_label, mask)
+			train_loss.append(loss)
 
 		if(i%100 == 0):
 			print("Batch: {}, loss: {}".format(i, loss))
@@ -52,6 +56,7 @@ def train(model, inputs, padding_index):
 		gradients = tape.gradient(loss, model.trainable_variables)
 		model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 	print("=====================Training complete=====================")
+	return train_loss
 
 def test(model, inputs, padding_index):
 	"""
@@ -83,6 +88,18 @@ def test(model, inputs, padding_index):
 	avg_loss = sum(losses)/sum(num_words)
 	print("=====================Testing complete=====================")
 	return math.exp(avg_loss)
+
+def graph_training_loss(loss_list): 
+	with plt.style.context('seaborn-poster'): 
+		plt.xlabel('Training Loss') 
+		plt.ylabel('Batch') 
+		plt.title('Training Loss vs. Batch Number')
+		batch_nums = [_ for _ in range(len(loss_list))] 
+		plt.plot(batch_nums, loss_list)
+		run_name = datetime.now().strftime("%d_%m_%Y_%H_%M_%S") 
+		plt.savefig(f'{run_name}.png', bbox_inches='tight')
+	
+	print("=====================Loss visualized=====================")
 
 def generate_sentence(word1, length, tokenizer, model, sample_n=5):
 	"""
@@ -137,7 +154,8 @@ def main():
 		print("=====================Pretraining=====================")
 		train(model, pretrain_data, PADDING_INDEX)
 		print("=====================Finetuning=====================")
-		train(model, train_data, PADDING_INDEX)
+		train_loss = train(model, train_data, PADDING_INDEX)
+		graph_training_loss(train_loss)
 		
 	perplexity = test(model, test_data, PADDING_INDEX)
 	print("Perplexity: ", perplexity)
