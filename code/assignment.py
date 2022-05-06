@@ -97,7 +97,7 @@ def graph_training_loss(loss_list):
 		batch_nums = [_ for _ in range(len(loss_list))] 
 		plt.plot(batch_nums, loss_list)
 		run_name = datetime.now().strftime("%d_%m_%Y_%H_%M_%S") 
-		plt.savefig(f'{run_name}.png', bbox_inches='tight')
+		plt.savefig(f'loss_graphs/{run_name}.png', bbox_inches='tight')
 	
 	print("=====================Loss visualized=====================")
 
