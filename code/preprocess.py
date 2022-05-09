@@ -127,7 +127,8 @@ def get_data():
 
   pretrain_data = tokenizer.encode_batch(pretrain_text)
   pretrain_data = [x.ids for x in pretrain_data if len(x)==WINDOW_SIZE+1]
-  
+  print("Pretrain size:", len(pretrain_data))
+  print("Finetune Size:", len(friends_data))
 
   return tokenizer, friends_data, pretrain_data
 

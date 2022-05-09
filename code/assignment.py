@@ -152,7 +152,9 @@ def main():
 		model.load_weights(args.load_model).expect_partial()
 	else:
 		print("=====================Pretraining=====================")
-		train(model, pretrain_data, PADDING_INDEX)
+		for i in range(1):
+			print("Epoch", i)
+			train(model, pretrain_data, PADDING_INDEX)
 		print("=====================Finetuning=====================")
 		train_loss = train(model, train_data, PADDING_INDEX)
 		graph_training_loss(train_loss)
