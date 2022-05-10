@@ -12,6 +12,7 @@ from matplotlib import pyplot as plt
 from datetime import datetime
 
 TRAIN_RATIO = 0.8
+PRETRAIN_EPOCHS = 1
 
 def train(model, inputs, padding_index):
 	"""
@@ -91,8 +92,8 @@ def test(model, inputs, padding_index):
 
 def graph_training_loss(loss_list): 
 	with plt.style.context('seaborn-poster'): 
-		plt.xlabel('Training Loss') 
-		plt.ylabel('Batch') 
+		plt.xlabel('Batch') 
+		plt.ylabel('Training Loss') 
 		plt.title('Training Loss vs. Batch Number')
 		batch_nums = [_ for _ in range(len(loss_list))] 
 		plt.plot(batch_nums, loss_list)
@@ -152,7 +153,7 @@ def main():
 		model.load_weights(args.load_model).expect_partial()
 	else:
 		print("=====================Pretraining=====================")
-		for i in range(1):
+		for i in range(PRETRAIN_EPOCHS):
 			print("Epoch", i)
 			train(model, pretrain_data, PADDING_INDEX)
 		print("=====================Finetuning=====================")
